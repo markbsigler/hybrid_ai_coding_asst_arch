@@ -415,33 +415,35 @@ graph TB
 ### Network Architecture & Considerations
 
 ```mermaid
-graph LR
-    %% Network Zones
-    subgraph "DMZ (Demilitarized Zone)"
+graph TB
+    %% DMZ Components
+    subgraph DMZ["DMZ (Demilitarized Zone)"]
         LB[Load Balancer<br/>NGINX/HAProxy]
         FW[Firewall<br/>pfSense/Fortinet]
     end
     
-    subgraph "Internal Network (192.168.1.0/24)"
-        subgraph "GPU Cluster VLAN (192.168.10.0/24)"
-            GPU_NODE1[GPU Node 1<br/>192.168.10.10]
-            GPU_NODE2[GPU Node 2<br/>192.168.10.11]
-            STORAGE[Shared Storage<br/>192.168.10.20]
-        end
-        
-        subgraph "Management VLAN (192.168.20.0/24)"
-            MGMT[Management Server<br/>192.168.20.10]
-            MON[Monitoring Stack<br/>192.168.20.20]
-        end
-        
-        subgraph "Developer VLAN (192.168.30.0/24)"
-            DEV_NET[Developer Network<br/>192.168.30.0/24]
-        end
+    %% GPU Cluster VLAN
+    subgraph GPU["GPU Cluster VLAN (192.168.10.0/24)"]
+        GPU_NODE1[GPU Node 1<br/>192.168.10.10]
+        GPU_NODE2[GPU Node 2<br/>192.168.10.11]
+        STORAGE[Shared Storage<br/>192.168.10.20]
     end
     
-    subgraph "Internet"
-        CLOUD_API[Cloud AI APIs<br/>Rate Limited<br/>100 req/min per dev]
+    %% Management VLAN
+    subgraph MGMT_VLAN["Management VLAN (192.168.20.0/24)"]
+        MGMT[Management Server<br/>192.168.20.10]
+        MON[Monitoring Stack<br/>192.168.20.20]
+    end
+    
+    %% Developer VLAN
+    subgraph DEV_VLAN["Developer VLAN (192.168.30.0/24)"]
+        DEV_NET[Developer Network<br/>192.168.30.0/24]
+    end
+    
+    %% Internet/Cloud
+    subgraph CLOUD["Internet & Cloud Services"]
         INTERNET[Internet Gateway]
+        CLOUD_API[Cloud AI APIs<br/>Rate Limited 100 req/min]
     end
     
     %% Network Connections
@@ -451,47 +453,56 @@ graph LR
     FW -->|100Gbps| GPU_NODE2
     FW -->|10Gbps| STORAGE
     
-    GPU_NODE1 -.->|InfiniBand<br/>200Gbps| GPU_NODE2
+    GPU_NODE1 -.->|InfiniBand 200Gbps| GPU_NODE2
     GPU_NODE1 -->|10Gbps| STORAGE
     GPU_NODE2 -->|10Gbps| STORAGE
     
     FW -->|1Gbps| MGMT
     MGMT -->|1Gbps| MON
     
-    LB -.->|HTTPS<br/>Rate Limited| INTERNET
+    LB -.->|HTTPS Rate Limited| INTERNET
     INTERNET -.-> CLOUD_API
     
-    %% Network Performance Specs
-    subgraph "Network Performance Requirements"
-        PERF[Network Requirements:<br/>
-        • Internal: 100 Gbps backbone<br/>
-        • Developer access: 1 Gbps per user<br/>
-        • Internet: 10 Gbps symmetrical<br/>
-        • Latency: <1ms internal, <50ms cloud<br/>
-        • Redundancy: Dual uplinks, LACP bonding]
-    end
-    
-    %% Security Considerations
-    subgraph "Security & Compliance"
-        SEC[Security Features:<br/>
-        • Network segmentation (VLANs)<br/>
-        • End-to-end TLS encryption<br/>
-        • VPN for remote developers<br/>
-        • API key rotation<br/>
-        • Request logging & audit<br/>
-        • Rate limiting per user/API]
-    end
-    
+    %% Styling
     classDef dmz fill:#ffebee,stroke:#c62828,stroke-width:2px
-    classDef internal fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef gpu fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef mgmt fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef dev fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
     classDef cloud fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef specs fill:#fff8e1,stroke:#f57f17,stroke-width:2px
     
     class LB,FW dmz
-    class GPU_NODE1,GPU_NODE2,STORAGE,MGMT,MON,DEV_NET internal
-    class CLOUD_API,INTERNET cloud
-    class PERF,SEC specs
+    class GPU_NODE1,GPU_NODE2,STORAGE gpu
+    class MGMT,MON mgmt
+    class DEV_NET dev
+    class INTERNET,CLOUD_API cloud
 ```
+
+### Network Performance Requirements
+
+**Bandwidth Specifications:**
+- **Internal Backbone**: 100 Gbps for GPU-to-GPU communication
+- **Developer Access**: 1 Gbps per user workstation
+- **Internet Connectivity**: 10 Gbps symmetrical for cloud API access
+- **Storage Access**: 10 Gbps per GPU node to shared storage
+
+**Performance Targets:**
+- **Internal Latency**: <1ms between internal components
+- **Cloud API Latency**: <50ms average response time
+- **Redundancy**: Dual uplinks with LACP bonding for high availability
+
+### Security & Compliance Features
+
+**Network Security:**
+- **VLAN Segmentation**: Isolation of GPU, management, and developer traffic
+- **End-to-End TLS Encryption**: All external communications encrypted
+- **VPN Access**: Secure remote developer connectivity
+- **Firewall Protection**: Enterprise-grade filtering and monitoring
+
+**Operational Security:**
+- **API Key Rotation**: Automated credential management
+- **Request Logging**: Complete audit trail for all API calls
+- **Rate Limiting**: Per-user and per-API consumption controls
+- **Network Monitoring**: 24/7 traffic analysis and anomaly detection
 
 ## Performance Benchmarks & Service Level Agreements
 
